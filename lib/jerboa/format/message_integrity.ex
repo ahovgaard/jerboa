@@ -8,7 +8,7 @@ defmodule Jerboa.Format.MessageIntegrity do
   alias Jerboa.Format.MessageIntegrity.FormatError
 
   @type_code 0x0008
-  @hash_length 20
+  @hash_length 32
   @attr_length @hash_length + 4
 
   def type_code, do: @type_code
@@ -52,9 +52,7 @@ defmodule Jerboa.Format.MessageIntegrity do
 
   @spec has_required_options?(Meta.t) :: boolean
   defp has_required_options?(meta) do
-    with {:ok, _} <- get_secret(meta),
-         {:ok, _} <- get_username(meta),
-         {:ok, _} <- get_realm(meta) do
+    with {:ok, _} <- get_secret(meta) do
       true
     else
       _ -> false
@@ -114,15 +112,18 @@ defmodule Jerboa.Format.MessageIntegrity do
 
   @spec calculate_hash_key(Meta.t) :: binary
   defp calculate_hash_key(meta) do
-    {:ok, username} = get_username(meta)
-    {:ok, realm} = get_realm(meta)
     {:ok, secret} = get_secret(meta)
-    :crypto.hash :md5, [username, ":", realm, ":", secret]
+    with {:ok, username} <- get_username(meta),
+         {:ok, realm} <- get_realm(meta) do
+      :crypto.hash :md5, [username, ":", realm, ":", secret]
+    else
+      _ -> secret
+    end
   end
 
   @spec calculate_hash(binary, iodata) :: binary
   def calculate_hash(key, data) do
-    :crypto.hmac(:sha, key, data)
+    :crypto.hmac(:sha256, key, data)
   end
 
   @spec get_hash_subject(Meta.t) :: iolist
