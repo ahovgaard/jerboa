@@ -58,7 +58,7 @@ defmodule Jerboa.Mixfile do
   end
 
   defp preferred_cli_env do
-    ["coveralls": :test, "coveralls.detail": :test,
+    [coveralls: :test, "coveralls.detail": :test,
      "coveralls.travis": :test, "coveralls.html": :test]
   end
 end
